@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Static</title>
+  <script src="https://cdn.jsdelivr.net/npm/mini-xhr@0/build/miniXhr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@0/dist/axios.min.js"></script>
+  <style>
+    div {
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body>
+<h1>Static</h1>
+
+<div>
+  username: <input type="text" id="username"/>
+  <br>
+  password: <input type="password" id="password"/>
+  <br>
+  <a id="login" href="javascript:">login</a>
+</div>
+
+<div>
+  des: <input type="text" id="des"/>
+  <br>
+  <a id="user" href="javascript:">user</a>
+</div>
+
+<script>
+  // 参考https://github.com/luffyZh/express-react-scaffold/blob/master/src/api/http.js
+  // 拦截请求，给所有的请求都带上token
+  axios.interceptors.request.use(request => {
+    const jwt_token = localStorage.getItem('jwt_token');
+    if (jwt_token) {
+      request.headers['Authorization'] = `Bearer ${jwt_token}`;
+    }
+    return request;
+  });
+
+  // 拦截响应，遇到token不合法则报错
+  axios.interceptors.response.use(response => {
+    if (response.data.token) {
+      console.log('token:', response.data.token);
+      localStorage.setItem('jwt_token', response.data.token);
+    }
+    return response;
+  }, error => {
+    const errRes = error.response;
+    if (errRes.status === 401) {
+      localStorage.removeItem('jwt_token');
+      console.error('重新登陆');
+      // 重新登陆逻辑在这边编写
+    }
+    return Promise.reject(error.message);
+  });
+</script>
+
+<script>
+  const PUBLIC_PATH = '/';
+  const username = document.querySelector('#username');
+  const password = document.querySelector('#password');
+  const des = document.querySelector('#des');
+
+  document.querySelector('#login').addEventListener('click', function (e) {
+    axios.post(PUBLIC_PATH + 'login', {
+      username: username.value,
+      password: password.value
+    })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
+
+  document.querySelector('#user').addEventListener('click', function (e) {
+    axios.post(PUBLIC_PATH + 'user', {
+      des: des.value
+    })
+      .then(console.log);
+  });
+</script>
+</body>
+</html>
+
